@@ -22,6 +22,7 @@ public class XMLSerializer implements Serializer {
     private final Charset charset = StandardCharsets.UTF_8;
 
     public void save(File out, Collection<? extends Transport> ts) throws IOException {
+
         try {
             XMLOutputFactory output = XMLOutputFactory.newInstance();
             XMLStreamWriter writer = output.createXMLStreamWriter(new FileWriter(out, charset));
@@ -35,6 +36,7 @@ public class XMLSerializer implements Serializer {
             writer.writeEndElement();
             writer.writeEndDocument();
 
+            writer.flush();
             writer.close();
         } catch (XMLStreamException e) {
             throw new IOException(e);

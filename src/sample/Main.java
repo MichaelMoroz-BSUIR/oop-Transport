@@ -26,7 +26,10 @@ import transport.water.Submarine;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Comparator;
 import java.util.Map;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.function.Supplier;
 
 public class Main implements Controller {
@@ -95,7 +98,7 @@ public class Main implements Controller {
     @FXML
     private void remove() {
         int i = listView.getSelectionModel().getSelectedIndex();
-        if (i > 0)
+        if (i >= 0)
             list.remove(i);
     }
 
@@ -115,11 +118,11 @@ public class Main implements Controller {
         File file = chooser.showSaveDialog(null);
         if (file == null)
             return;
-        ObservableList<Transport> selectedItems = listView.getSelectionModel().getSelectedItems();
-        if (selectedItems.isEmpty())
+        ObservableList<Transport> ts = list;//listView.getSelectionModel().getSelectedItems();
+        if (ts.isEmpty())
             return;
         try {
-            serialCB.getValue().save(file, selectedItems);
+            serialCB.getValue().save(file, ts);
         } catch (Exception e) {
             handle(e);
         }
@@ -173,7 +176,7 @@ public class Main implements Controller {
 
 
         ObservableList<Supplier<Transport>> factories = FXCollections.observableArrayList(
-                () -> new Plane(22690, 0, 13460,
+                () -> new Plane(22690, 2360, 13460,
                         21820, 46750, 2500,
                         2, 0,
                         21500, 61),
@@ -189,15 +192,15 @@ public class Main implements Controller {
                         143, 1, 1,
                         164, 345,
                         7.8, "BMW"),
-                () -> new Train(0, 0, 0,
-                        0, 0, 0,
-                        0),
+                () -> new Train(250_462, 4850, 3480,
+                        160, 2, 346,
+                        10),
                 () -> new Ship(306450, 64490, 71960,
                         54, 1980, 0,
                         46540000, 61390000,
                         12359),
                 () -> new Submarine(154000, 9200, 18200,
-                        90, 0, 0,
+                        90, 40, 0,
                         14700000, 23900000,
                         520, 600, 27)
         );
