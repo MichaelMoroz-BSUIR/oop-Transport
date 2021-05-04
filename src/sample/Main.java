@@ -110,7 +110,7 @@ public class Main implements Controller {
         if (file == null)
             return;
         try (InputStream in = new FileInputStream(file)) {
-            list.addAll(getSerializer().load(new Huffman().decompress(in)));
+            list.addAll(getSerializer().load(in));
         } catch (Exception e) {
             handle(e);
         }
@@ -121,7 +121,7 @@ public class Main implements Controller {
         if (file == null)
             return;
         try (OutputStream out = new FileOutputStream(file)) {
-            getSerializer().save(new Huffman().compress(out), list);
+            getSerializer().save(out, list);
         } catch (Exception e) {
             handle(e);
         }
