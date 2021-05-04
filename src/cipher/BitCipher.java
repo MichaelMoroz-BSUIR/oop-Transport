@@ -15,7 +15,7 @@ public class BitCipher implements Cipher {
         BitGenerator g = new BitGenerator(key);
         return new OutputStream() {
             public synchronized void write(int b) throws IOException {
-                out.write(b ^ g.nextByte());
+                out.write((b ^ g.nextByte()) & 0xFF);
             }
 
             public void flush() throws IOException {

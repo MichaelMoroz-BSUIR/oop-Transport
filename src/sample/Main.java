@@ -1,5 +1,6 @@
 package sample;
 
+import archiver.Huffman;
 import cipher.Cipher;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -84,15 +85,8 @@ public class Main implements Controller {
     private Serializer getSerializer() {
         Serializer value = serialCB.getValue();
         Cipher cipher = getCipher();
-        return cipher == null ? value : new Serializer() {
-            public void save(OutputStream out, Collection<? extends Transport> ts) throws IOException {
-                value.save(cipher.encode(out), ts);
-            }
-
-            public Collection<? extends Transport> load(InputStream in) throws IOException {
-                return value.load(cipher.decode(in));
-            }
-        };
+        return cipher == null ? value :
+                new CipherSerializer(value, cipher);
     }
     private Cipher getCipher() {
         TitledPane pane = ciphers.getExpandedPane();
@@ -116,7 +110,7 @@ public class Main implements Controller {
         if (file == null)
             return;
         try (InputStream in = new FileInputStream(file)) {
-            list.addAll(getSerializer().load(in));
+            list.addAll(getSerializer().load(new Huffman().decompress(in)));
         } catch (Exception e) {
             handle(e);
         }
@@ -126,11 +120,8 @@ public class Main implements Controller {
         File file = chooser.showSaveDialog(null);
         if (file == null)
             return;
-        ObservableList<Transport> ts = list;//listView.getSelectionModel().getSelectedItems();
-        if (ts.isEmpty())
-            return;
         try (OutputStream out = new FileOutputStream(file)) {
-            getSerializer().save(out, ts);
+            getSerializer().save(new Huffman().compress(out), list);
         } catch (Exception e) {
             handle(e);
         }
@@ -249,5 +240,22 @@ class CipherPane extends TitledPane {
 
     public CipherViewModel getCipherViewModel() {
         return cipherViewModel;
+    }
+}
+
+class CipherSerializer implements Serializer {
+    private final Serializer back;
+    private final Cipher cipher;
+
+    public CipherSerializer(Serializer back, Cipher cipher) {
+        this.back = Objects.requireNonNull(back);
+        this.cipher = Objects.requireNonNull(cipher);
+    }
+
+    public void save(OutputStream out, Collection<? extends Transport> ts) throws Exception {
+        back.save(cipher.encode(out), ts);
+    }
+    public Collection<? extends Transport> load(InputStream in) throws Exception {
+        return back.load(cipher.decode(in));
     }
 }

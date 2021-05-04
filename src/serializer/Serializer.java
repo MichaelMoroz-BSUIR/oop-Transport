@@ -8,6 +8,6 @@ import java.io.OutputStream;
 import java.util.Collection;
 
 public interface Serializer {
-    void save(OutputStream out, Collection<? extends Transport> ts) throws IOException;
-    Collection<? extends Transport> load(InputStream in) throws IOException;
+    void save(OutputStream out, Collection<? extends Transport> ts) throws Exception;
+    Collection<? extends Transport> load(InputStream in) throws Exception;
 }

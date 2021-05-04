@@ -18,46 +18,37 @@ import java.util.Collection;
 
 public class XMLSerializer implements Serializer {
     private final Charset charset = StandardCharsets.UTF_8;
+    private final XMLOutputFactory output = XMLOutputFactory.newInstance();
 
-    public void save(OutputStream out, Collection<? extends Transport> ts) throws IOException {
-
+    public void save(OutputStream out, Collection<? extends Transport> ts) throws Exception {
+        XMLStreamWriter w = output.createXMLStreamWriter(new OutputStreamWriter(out, charset));
         try {
-            XMLOutputFactory output = XMLOutputFactory.newInstance();
-            XMLStreamWriter writer = output.createXMLStreamWriter(new OutputStreamWriter(out, charset));
-
-            writer.writeStartDocument(charset.displayName(), "1.0");
-            writer.writeStartElement("Transports");
+            w.writeStartDocument(charset.displayName(), "1.0");
+            w.writeStartElement("Transports");
 
             for (Transport t : ts)
-                t.write(writer);
+                t.write(w);
 
-            writer.writeEndElement();
-            writer.writeEndDocument();
-
-            writer.flush();
-            writer.close();
-        } catch (XMLStreamException e) {
-            throw new IOException(e);
+            w.writeEndElement();
+            w.writeEndDocument();
+        } finally {
+            w.close();
         }
     }
-    public Collection<? extends Transport> load(InputStream in) throws IOException {
-        try {
-            DocumentBuilder documentBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-            Document document = documentBuilder.parse(in);
-            Node root = document.getDocumentElement();
-            NodeList nodes = root.getChildNodes();
-            ArrayList<Transport> ts = new ArrayList<>(nodes.getLength());
-            for (int i = 0; i < nodes.getLength(); i++) {
-                Node item = nodes.item(i);
-                if (item.getNodeType() != Node.TEXT_NODE) {
-                    Transport t = Transport.read(item);
-                    if (t != null)
-                        ts.add(t);
-                }
+    public Collection<? extends Transport> load(InputStream in) throws Exception {
+        DocumentBuilder documentBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+        Document document = documentBuilder.parse(in);
+        Node root = document.getDocumentElement();
+        NodeList nodes = root.getChildNodes();
+        ArrayList<Transport> ts = new ArrayList<>(nodes.getLength());
+        for (int i = 0; i < nodes.getLength(); i++) {
+            Node item = nodes.item(i);
+            if (item.getNodeType() != Node.TEXT_NODE) {
+                Transport t = Transport.read(item);
+                if (t != null)
+                    ts.add(t);
             }
-            return ts;
-        } catch (Exception e) {
-            throw new IOException(e);
         }
+        return ts;
     }
 }
