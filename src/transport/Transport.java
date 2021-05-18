@@ -142,11 +142,11 @@ public class Transport implements Serializable {
         return true;
     }
     final void read0(Node node) {
-        NodeList children = node.getChildNodes();
-        for (int i = 0; i < children.getLength(); i++) {
-            Node n = children.item(i);
-            if (n.getNodeType() != Node.TEXT_NODE) {
-                readProps(n.getNodeName(), n.getChildNodes().item(0).getTextContent());
+        NodeList props = node.getChildNodes();
+        for (int i = 0; i < props.getLength(); i++) {
+            Node prop = props.item(i);
+            if (prop.getNodeType() != Node.TEXT_NODE) {
+                readProps(prop.getNodeName(), prop.getChildNodes().item(0).getTextContent());
             }
         }
     }

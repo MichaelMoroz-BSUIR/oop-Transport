@@ -8,6 +8,16 @@ import java.util.Collection;
 import java.util.Objects;
 
 public class JavaSerializer implements Serializer {
+    private static class InstanceHolder {
+        static final JavaSerializer INSTANCE = new JavaSerializer();
+    }
+    public static JavaSerializer getInstance() {
+        return InstanceHolder.INSTANCE;
+    }
+
+    private JavaSerializer() {
+    }
+
     public void save(OutputStream out, Collection<? extends Transport> ts) throws Exception {
         if (Objects.requireNonNull(ts).isEmpty())
             return;

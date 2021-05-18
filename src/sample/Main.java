@@ -1,6 +1,8 @@
 package sample;
 
-import archiver.Huffman;
+import archiver.Archiver;
+import archiver.JavaArchiver;
+import archiver.huffman.Huffman;
 import cipher.Cipher;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -13,9 +15,7 @@ import javafx.scene.control.TitledPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.stage.FileChooser;
-import javafx.util.StringConverter;
 import sample.cipherViewModel.BitViewModel;
-import sample.cipherViewModel.CipherViewModel;
 import sample.cipherViewModel.RSAViewModel;
 import sample.transportViewModel.*;
 import serializer.JavaSerializer;
@@ -31,23 +31,23 @@ import transport.water.Ship;
 import transport.water.Submarine;
 
 import java.io.*;
-import java.util.Collection;
-import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.Supplier;
 
 public class Main implements Controller {
     public static Main create() {
         return App.create("fxml/main.fxml");
     }
+    private static final Supplier<?> NULL_SUPPLIER = () -> null;
 
     @FXML
     private HBox root;
     @FXML
     private ChoiceBox<Supplier<Transport>> transportCB;
     @FXML
-    private ChoiceBox<Serializer> serialCB;
+    private ChoiceBox<Supplier<Serializer>> serialCB;
+    @FXML
+    private ChoiceBox<Supplier<Archiver>> archiverCB;
     @FXML
     private Accordion ciphers;
     @FXML
@@ -79,23 +79,27 @@ public class Main implements Controller {
     public Pane getRoot() {
         return root;
     }
-    private Supplier<Transport> getTransportFactory() {
-        return transportCB.getValue();
-    }
-    private Serializer getSerializer() {
-        Serializer value = serialCB.getValue();
-        Cipher cipher = getCipher();
-        return cipher == null ? value :
-                new CipherSerializer(value, cipher);
-    }
+
     private Cipher getCipher() {
         TitledPane pane = ciphers.getExpandedPane();
         return pane == null ? null : ((CipherPane) pane).getCipherViewModel().get();
     }
+    private Serializer getSerializer() {
+        Serializer s = serialCB.getValue().get();
+
+        Cipher cipher = getCipher();
+        if (cipher != null)
+            s = new CipherSerializer(s, cipher);
+
+        Archiver archiver = archiverCB.getValue().get();
+        if (archiver != null)
+            s = new ArchiverSerializer(s, archiver);
+        return s;
+    }
 
     @FXML
     private void add() {
-        list.add(getTransportFactory().get());
+        list.add(transportCB.getValue().get());
     }
     @FXML
     private void remove() {
@@ -148,14 +152,22 @@ public class Main implements Controller {
         panes.add(new CipherPane("RSA Cipher", RSAViewModel.create()));
         panes.add(new CipherPane("Bit Cipher", BitViewModel.create()));
 
+        ObservableList<Supplier<Archiver>> archivers = FXCollections.observableArrayList(
+                ((Supplier<Archiver>) NULL_SUPPLIER),
+                JavaArchiver::getInstance,
+                Huffman::getInstance
+        );
+        archiverCB.setConverter(new StrMap<>(archivers,
+                "NONE", "JavaArchiver", "Huffman (Not worked)"));
+        archiverCB.setItems(archivers);
+        archiverCB.setValue(archivers.get(0));
 
-        ObservableList<Serializer> serializers = FXCollections.observableArrayList(
-                new JavaSerializer(),
-                new XMLSerializer()
+        ObservableList<Supplier<Serializer>> serializers = FXCollections.observableArrayList(
+                JavaSerializer::getInstance,
+                XMLSerializer::getInstance
         );
         serialCB.setConverter(new StrMap<>(serializers,
-                "JavaSerializer",
-                "XMLSerializer"));
+                "JavaSerializer", "XMLSerializer"));
         serialCB.setItems(serializers);
         serialCB.setValue(serializers.get(0));
 
@@ -208,54 +220,3 @@ public class Main implements Controller {
     }
 }
 
-class StrMap<T> extends StringConverter<T> {
-    private final List<T> list;
-    private final String[] names;
-
-    public StrMap(List<T> list, String... names) {
-        this.list = Objects.requireNonNull(list);
-        this.names = names;
-    }
-
-    public String toString(T t) {
-        int i = list.indexOf(t);
-        return i < 0 ? null : names[i];
-    }
-    public T fromString(String s) {
-        for (int i = 0; i < names.length; i++)
-            if (names[i].equals(s))
-                return list.get(i);
-        return null;
-    }
-}
-
-class CipherPane extends TitledPane {
-    private final CipherViewModel cipherViewModel;
-
-    CipherPane(String title, CipherViewModel cipherViewModel) {
-        this.cipherViewModel = Objects.requireNonNull(cipherViewModel);
-        setContent(cipherViewModel.getRoot());
-        setText(title);
-    }
-
-    public CipherViewModel getCipherViewModel() {
-        return cipherViewModel;
-    }
-}
-
-class CipherSerializer implements Serializer {
-    private final Serializer back;
-    private final Cipher cipher;
-
-    public CipherSerializer(Serializer back, Cipher cipher) {
-        this.back = Objects.requireNonNull(back);
-        this.cipher = Objects.requireNonNull(cipher);
-    }
-
-    public void save(OutputStream out, Collection<? extends Transport> ts) throws Exception {
-        back.save(cipher.encode(out), ts);
-    }
-    public Collection<? extends Transport> load(InputStream in) throws Exception {
-        return back.load(cipher.decode(in));
-    }
-}
